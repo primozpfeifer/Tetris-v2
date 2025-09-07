@@ -83,6 +83,37 @@ void Game::initGame()
 	m_playfield->spawnMino();
 }
 
+void Game::updateScore(int clearedRows)
+{
+	if (clearedRows > 0)
+	{
+		int points = m_score.level;
+
+		switch (clearedRows)
+		{
+		case 1:
+			points *= 40;
+			break;
+		case 2:
+			points *= 100;
+			break;
+		case 3:
+			points *= 300;
+			break;
+		case 4:
+			points *= 1200;
+			break;
+		}
+
+		m_score.points += points;
+		m_score.rows += clearedRows;
+		m_score.level = int(m_score.rows * 0.1f);
+	}
+
+	m_score.points += m_softDropRows - 1;
+	m_score.points += m_hardDropRows * 2 - 1;
+}
+
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -186,36 +217,10 @@ void Game::collision()
 				}
 
 				// full rows and scoring
-				int clearedRows = m_playfield->clearFullRows();
-				if (clearedRows)
-				{
-					int points = m_score.level;
-
-					switch (clearedRows)
-					{
-					case 1:
-						points *= 40;
-						break;
-					case 2:
-						points *= 100;
-						break;
-					case 3:
-						points *= 300;
-						break;
-					case 4:
-						points *= 1200;
-						break;
-					}
-
-					m_score.points;
-					m_score.rows += clearedRows;
-					m_score.level = int(m_score.rows * 0.1f);
-				}
+				updateScore(m_playfield->clearFullRows());
 				m_softDrop = false;
-				m_score.points += m_softDropRows - 1;
 				m_softDropRows = 0;
 				m_hardDrop = false;
-				m_score.points += m_hardDropRows * 2 - 1;
 				m_hardDropRows = 0;
 
 				// check if minos stacked to the top

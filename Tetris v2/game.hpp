@@ -66,6 +66,7 @@ public:
 	void run();
 	void initWindow();
 	void initGame();
+	void updateScore(int rows);
 
 	void movement();
 	void collision();
