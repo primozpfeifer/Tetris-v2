@@ -24,6 +24,9 @@
     <ClCompile Include="tetromino.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="playfield.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="game.hpp">
@@ -32,8 +35,13 @@
     <ClInclude Include="tetromino.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="playfield.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="to-do.txt" />
+    <Text Include="to-do.txt">
+      <Filter>Source Files</Filter>
+    </Text>
   </ItemGroup>
 </Project>

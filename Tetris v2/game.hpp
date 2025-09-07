@@ -1,6 +1,5 @@
 #pragma once
-#include "tetromino.hpp"
-#include <random>
+#include "playfield.hpp"
 
 
 struct Config
@@ -32,7 +31,7 @@ enum GameState { Init, Playing, Pause, Gameover };
 
 struct Score
 {
-	int score = 0;
+	int points = 0;
 	int rows = 0;
 	int level = 1;
 	int playTime = 0;
@@ -48,8 +47,7 @@ private:
 	sf::Font					m_font;
 	bool						m_running = false;
 	GameState					m_gameState = Init;
-	std::vector<int>			m_playfieldGrid;
-	std::unique_ptr<Tetromino>	m_activeMino;
+	std::unique_ptr<Playfield>	m_playfield;
 	float						m_dT = 0.0f;
 	float						m_gameSpeed = 0.0f;
 	bool						m_moveMinoDown = false;
@@ -68,14 +66,6 @@ public:
 	void run();
 	void initWindow();
 	void initGame();
-	void initPlayfield();
-	void resetPlayfield();
-	void setCellType(sf::Vector2i position, int type);
-	int getCellType(sf::Vector2i position);
-	void spawnMino();
-	int clearFullRows();
-	int countFullCells(int y);
-	void moveRowDown(int y, int rows);
 
 	void movement();
 	void collision();
