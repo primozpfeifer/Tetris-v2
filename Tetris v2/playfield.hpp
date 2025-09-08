@@ -1,6 +1,5 @@
 #pragma once
 #include "tetromino.hpp"
-#include <random>
 
 
 class Playfield
@@ -21,7 +20,7 @@ public:
 	void reset();
 	void setCellType(sf::Vector2i position, int type);
 	int getCellType(sf::Vector2i position);
-	void spawnMino();
+	void spawnMino(int shapeType);
 	std::shared_ptr<Tetromino> activeMino();
 	int clearFullRows();
 	int countFullCells(int y);

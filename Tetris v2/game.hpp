@@ -1,6 +1,10 @@
 #pragma once
 #include "playfield.hpp"
+#include <random>
 
+
+enum GameState { Init = 0, Playing, Pause, Gameover };
+enum Randomizer { FullRandom = 0, ShuffleBag };
 
 struct Config
 {
@@ -9,6 +13,7 @@ struct Config
 	int							cellSize = 40;
 	int							topBarHeight = 100;
 	float						gameSpeed = 0.8f;
+	Randomizer					randomizer = ShuffleBag;
 
 	std::array<sf::Color, 10>	color =
 	{
@@ -23,11 +28,7 @@ struct Config
 		sf::Color(32, 32, 32),		// border
 		sf::Color(0, 0, 0)			// spacing
 	};
-
 };
-
-enum GameState { Init, Playing, Pause, Gameover };
-
 
 struct Score
 {
@@ -56,6 +57,7 @@ private:
 	int							m_softDropRows = 0;
 	bool						m_hardDrop = false;
 	int							m_hardDropRows = 0;
+	std::vector<int>			m_shuffleBag;
 	Score						m_score;
 
 
@@ -66,6 +68,7 @@ public:
 	void run();
 	void initWindow();
 	void initGame();
+	int getRandomShapeType();
 	void updateScore(int rows);
 
 	void movement();

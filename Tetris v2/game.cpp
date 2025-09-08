@@ -77,14 +77,53 @@ void Game::initGame()
 	m_gameState = Playing;
 	m_dT = 0.0f;
 	m_gameSpeed = m_config.gameSpeed;
+	m_shuffleBag.reserve(7);
 	m_playfield = std::make_unique<Playfield>(m_config.cols, m_config.rows);
 	m_playfield->init();
 	m_playfield->reset();
-	m_playfield->spawnMino();
+	m_playfield->spawnMino(getRandomShapeType());
+}
+
+int Game::getRandomShapeType()
+{
+	std::mt19937 seed(std::random_device{}());
+	int shapeType = 0;
+
+	// full random
+	if (m_config.randomizer == FullRandom)
+	{
+		std::uniform_int_distribution dist(1, 7);
+		shapeType = dist(seed);
+	}
+
+	// shuffle bag
+	else if (m_config.randomizer == ShuffleBag)
+	{
+		if (m_shuffleBag.size() == 0)
+		{
+			for (int i = 1; i <= 7; i++)
+			{
+				m_shuffleBag.push_back(i);
+			}
+		}
+
+		int elements = static_cast<int>(m_shuffleBag.size());
+
+		std::uniform_int_distribution dist(0, elements - 1);
+		int index = dist(seed);
+		shapeType = m_shuffleBag[index];
+
+		m_shuffleBag.erase(m_shuffleBag.begin() + index);
+	}
+
+	return shapeType;
 }
 
 void Game::updateScore(int clearedRows)
 {
+	m_score.points += m_softDropRows - 1;
+	m_score.points += m_hardDropRows * 2 - 1;
+	
 	if (clearedRows > 0)
 	{
 		int points = m_score.level;
@@ -109,9 +148,6 @@ void Game::updateScore(int clearedRows)
 		m_score.rows += clearedRows;
 		m_score.level = int(m_score.rows * 0.1f);
 	}
-
-	m_score.points += m_softDropRows - 1;
-	m_score.points += m_hardDropRows * 2 - 1;
 }
 
 
@@ -235,7 +271,7 @@ void Game::collision()
 				}
 
 				// spawn new mino
-				m_playfield->spawnMino();
+				m_playfield->spawnMino(getRandomShapeType());
 				break;
 			}
 		}

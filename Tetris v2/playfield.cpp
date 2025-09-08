@@ -45,17 +45,12 @@ int Playfield::getCellType(sf::Vector2i position)
 	}
 }
 
-void Playfield::spawnMino()
+void Playfield::spawnMino(int shapeType)
 {
-	// shape type randomizer
-	std::mt19937 seed(std::random_device{}());
-	std::uniform_int_distribution dist(1, 7);
-	int shapeType = dist(seed);
-
-	// starting position
 	sf::Vector2i position;
 	position.x = (m_cols - 4) / 2;
 	position.y = -2;
+
 	if (shapeType == 4) position.x += 1;
 
 	m_activeMino.reset();
