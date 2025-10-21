@@ -57,7 +57,7 @@ void Playfield::spawnMino(int shapeType)
 	m_activeMino = std::make_shared<Tetromino>(shapeType, position);
 }
 
-std::shared_ptr<Tetromino> Playfield::activeMino()
+std::shared_ptr<Tetromino>& Playfield::activeMino()
 {
 	return m_activeMino;
 }
@@ -88,12 +88,14 @@ int Playfield::clearFullRows()
 			moveRowDown(y, fullRows);
 		}
 	}
+
 	return fullRows;
 }
 
 int Playfield::countFullCells(int y)
 {
 	int fullCells = 0;
+	
 	for (int x = 1; x < m_cols - 1; x++)
 	{
 		if (getCellType(sf::Vector2i(x, y)) != 0)
@@ -101,6 +103,7 @@ int Playfield::countFullCells(int y)
 			fullCells++;
 		}
 	}
+
 	return fullCells;
 }
 

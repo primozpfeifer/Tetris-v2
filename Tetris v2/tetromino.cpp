@@ -185,11 +185,11 @@ void Tetromino::rotate(int rotation)
 {
 	m_shapeState += rotation;
 
-	if (m_shapeState == 4)
+	if (m_shapeState > 3)
 	{
 		m_shapeState = 0;
 	}
-	else if (m_shapeState == -1)
+	else if (m_shapeState < 0)
 	{
 		m_shapeState = 3;
 	}

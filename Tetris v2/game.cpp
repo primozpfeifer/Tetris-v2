@@ -7,6 +7,8 @@ Game::Game()
 {
 	initWindow();
 	initGame();
+	resetGame();
+	m_gameState = Pause;
 }
 
 
@@ -36,11 +38,8 @@ void Game::run()
 		}
 
 
-		if (m_gameState == Playing)
-		{
-			movement();
-			collision();
-		}
+		movement();
+		collision();
 		inputEvents();
 		render();
 
@@ -56,12 +55,14 @@ void Game::initWindow()
 	int width = m_config.cellSize * m_config.cols;
 	int height = m_config.cellSize * m_config.rows + m_config.topBarHeight;
 
-	m_window.create(
+	m_window = std::make_shared<sf::RenderWindow>();
+
+	m_window->create(
 		sf::VideoMode(width, height),
 		title,
 		sf::Style::Titlebar | sf::Style::Close);
 
-	m_window.setKeyRepeatEnabled(false);
+	m_window->setKeyRepeatEnabled(false);
 
 	// load font from file
 	if (!m_font.loadFromFile("arial.ttf"))
@@ -74,26 +75,46 @@ void Game::initWindow()
 void Game::initGame()
 {
 	m_running = true;
-	m_gameState = Playing;
-	m_dT = 0.0f;
-	m_gameSpeed = m_config.gameSpeed;
 	m_shuffleBag.reserve(7);
+
+	m_menu = std::make_unique<Menu>(sf::Vector2f(m_window->getSize()), sf::Vector2f(0.9f, 0.5f));
+	m_menu->addButton(sf::Vector2f(0.9f, 0.15f), sf::Vector2f(1.0f, -0.2f), m_font, "CONTINUE");
+	m_menu->addButton(sf::Vector2f(0.9f, 0.15f), sf::Vector2f(1.0f, 0.0f), m_font, "RESTART");
+	m_menu->addButton(sf::Vector2f(0.9f, 0.15f), sf::Vector2f(1.0f, 0.2f), m_font, "QUIT");
+
 	m_playfield = std::make_unique<Playfield>(m_config.cols, m_config.rows);
 	m_playfield->init();
-	m_playfield->reset();
-	m_playfield->spawnMino(getRandomShapeType());
 }
 
-int Game::getRandomShapeType()
+void Game::resetGame()
 {
-	std::mt19937 seed(std::random_device{}());
+	m_moveMinoDown = false;
+	m_softDrop = false;
+	m_softDropRows = 0;
+	m_hardDrop = false;
+	m_hardDropRows = 0;
+	m_shuffleBag.clear();
+	m_score = {};
+	
+	m_gameState = Playing;
+	m_gameSpeed = m_config.gameSpeed;
+	m_dT = 0.0f;
+	m_playfield->reset();
+	m_playfield->spawnMino(randomShapeType());
+}
+
+int Game::randomShapeType()
+{
 	int shapeType = 0;
+
+	std::random_device rd;
+	std::mt19937_64 gen(rd());
 
 	// full random
 	if (m_config.randomizer == FullRandom)
 	{
-		std::uniform_int_distribution dist(1, 7);
-		shapeType = dist(seed);
+		std::uniform_int_distribution uid(1, 7);
+		shapeType = uid(gen);
 	}
 
 	// shuffle bag
@@ -109,8 +130,8 @@ int Game::getRandomShapeType()
 
 		int elements = static_cast<int>(m_shuffleBag.size());
 
-		std::uniform_int_distribution dist(0, elements - 1);
-		int index = dist(seed);
+		std::uniform_int_distribution uid(0, elements - 1);
+		int index = uid(gen);
 		shapeType = m_shuffleBag[index];
 
 		m_shuffleBag.erase(m_shuffleBag.begin() + index);
@@ -150,6 +171,19 @@ void Game::updateScore(int clearedRows)
 	}
 }
 
+void Game::togglePause()
+{
+	if (m_gameState == Playing)
+	{
+		m_gameState = Pause;
+		m_menu->setActiveIndex(0);
+	}
+	else if (m_gameState == Pause)
+	{
+		m_gameState = Playing;
+	}
+}
+
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -157,11 +191,56 @@ void Game::updateScore(int clearedRows)
 
 void Game::movement()
 {
+	// menu movement
+	if (m_gameState == Pause)
+	{
+		switch (m_lastPressedKey)
+		{
+		case sf::Keyboard::Up:
+			m_menu->setActiveIndex(m_menu->getActiveIndex() - 1);
+			break;
+
+		case sf::Keyboard::Down:
+			m_menu->setActiveIndex(m_menu->getActiveIndex() + 1);
+			break;
+		
+		case sf::Keyboard::Enter:
+			if (m_menu->getActiveIndex() == 0)
+			{
+				togglePause();
+				return;
+			}
+			else if (m_menu->getActiveIndex() == 1)
+			{
+				resetGame();
+				return;
+			}
+			else if (m_menu->getActiveIndex() == 2)
+			{
+				m_running = false;
+				return;
+			}
+			break;
+		}
+
+		return;
+	}
+
+	else if (m_gameState != Playing)
+		return;
+
+
+	// game movement
 	switch (m_lastPressedKey)
 	{
 		// rotation
 	case sf::Keyboard::Up:
 		m_playfield->activeMino()->rotate(1);
+		break;
+
+		// soft drop
+	case sf::Keyboard:: Down:
+		m_softDrop = true;
 		break;
 
 		// horizontal movement
@@ -173,6 +252,9 @@ void Game::movement()
 		m_playfield->activeMino()->move(sf::Vector2i(1, 0));
 		break;
 
+	case sf::Keyboard::Space:
+		m_hardDrop = true;
+		break;
 	}
 
 	// falling
@@ -194,6 +276,11 @@ void Game::movement()
 
 void Game::collision()
 {
+	// check game state, collision only when playing the game
+	if (m_gameState != Playing)
+		return;
+
+
 	const std::array<sf::Vector2i, 4>& positions = m_playfield->activeMino()->getPositions();
 
 	// rotation collision
@@ -271,7 +358,7 @@ void Game::collision()
 				}
 
 				// spawn new mino
-				m_playfield->spawnMino(getRandomShapeType());
+				m_playfield->spawnMino(randomShapeType());
 				break;
 			}
 		}
@@ -283,7 +370,7 @@ void Game::inputEvents()
 	m_lastPressedKey = sf::Keyboard::Unknown;
 	sf::Event event;
 
-	while (m_window.pollEvent(event))
+	while (m_window->pollEvent(event))
 	{
 		if (event.type == sf::Event::Closed)
 		{
@@ -295,13 +382,13 @@ void Game::inputEvents()
 		{
 			switch (event.key.code)
 			{
-			case sf::Keyboard::Escape:	m_running = false; return;
+			case sf::Keyboard::Escape:	togglePause(); return;
+			case sf::Keyboard::Enter:	m_lastPressedKey = sf::Keyboard::Enter; break;
 			case sf::Keyboard::Left:	m_lastPressedKey = sf::Keyboard::Left; break;
 			case sf::Keyboard::Right:	m_lastPressedKey = sf::Keyboard::Right; break;
 			case sf::Keyboard::Up:		m_lastPressedKey = sf::Keyboard::Up; break;
-			case sf::Keyboard::Down:	m_softDrop = true; break;
-			case sf::Keyboard::Space:	m_hardDrop = true; break;
-			case sf::Keyboard::P:		m_gameState = Playing ? Pause : Playing; break;
+			case sf::Keyboard::Down:	m_lastPressedKey = sf::Keyboard::Down; break;
+			case sf::Keyboard::Space:	m_lastPressedKey = sf::Keyboard::Space; break;
 			}
 		}
 	}
@@ -314,12 +401,15 @@ void Game::inputEvents()
 
 void Game::render()
 {
-	m_window.clear();
-	drawTopBar(); //////
+	m_window->clear();
+	drawTopBar();
 	drawPlayField();
 	drawActiveMino();
-	//drawTopBar(); //////
-	m_window.display();
+	if (m_gameState == Pause)
+	{
+		m_menu->draw(m_window);
+	}
+	m_window->display();
 }
 
 sf::Color Game::getColor(int type)
@@ -329,12 +419,13 @@ sf::Color Game::getColor(int type)
 
 void Game::drawTopBar()
 {
-	sf::RectangleShape cell(sf::Vector2f(m_config.cellSize * m_config.cols * 1.f, m_config.topBarHeight * 1.f));
+	sf::RectangleShape cell;
+	cell.setSize(sf::Vector2f(m_config.cellSize * m_config.cols * 1.0f, m_config.topBarHeight * 1.0f));
+	cell.setPosition(0 * 1.0f, 0 * 1.0f);
 	cell.setOutlineThickness(-2);
 	cell.setOutlineColor(getColor(9));
-	cell.setPosition(0 * 1.0f, 0 * 1.0f);
 	cell.setFillColor(getColor(8));
-	m_window.draw(cell);
+	m_window->draw(cell);
 
 	sf::Text text;
 	text.setFont(m_font);
@@ -344,15 +435,15 @@ void Game::drawTopBar()
 
 	text.setString("SCORE : " + std::to_string(m_score.points));
 	text.setPosition(20, 15);
-	m_window.draw(text);
+	m_window->draw(text);
 
 	text.setString("LINES : " + std::to_string(m_score.rows));
 	text.setPosition(36, 55);
-	m_window.draw(text);
+	m_window->draw(text);
 
 	text.setString("LEVEL : " + std::to_string(m_score.level));
 	text.setPosition(261, 55);
-	m_window.draw(text);
+	m_window->draw(text);
 
 
 	std::string hours = std::to_string(m_score.playTime / 3600);
@@ -365,12 +456,13 @@ void Game::drawTopBar()
 
 	text.setString("TIME : " + hours + ":" + minutes + ":" + seconds);
 	text.setPosition(276, 15);
-	m_window.draw(text);
+	m_window->draw(text);
 }
 
 void Game::drawPlayField()
 {
-	sf::RectangleShape cell(sf::Vector2f(m_config.cellSize * 1.0f, m_config.cellSize * 1.0f));
+	sf::RectangleShape cell;
+	cell.setSize(sf::Vector2f(m_config.cellSize * 1.0f, m_config.cellSize * 1.0f));
 	cell.setOutlineThickness(-2);
 	cell.setOutlineColor(getColor(9));
 
@@ -380,14 +472,15 @@ void Game::drawPlayField()
 		{
 			cell.setPosition(m_config.cellSize * x * 1.0f, m_config.topBarHeight + m_config.cellSize * y * 1.0f);
 			cell.setFillColor(getColor(m_playfield->getCellType(sf::Vector2i(x, y))));
-			m_window.draw(cell);
+			m_window->draw(cell);
 		}
 	}
 }
 
 void Game::drawActiveMino()
 {
-	sf::RectangleShape cell(sf::Vector2f(m_config.cellSize * 1.0f, m_config.cellSize * 1.0f));
+	sf::RectangleShape cell;
+	cell.setSize(sf::Vector2f(m_config.cellSize * 1.0f, m_config.cellSize * 1.0f));
 	cell.setOutlineThickness(-2);
 	cell.setOutlineColor(getColor(9));
 
@@ -398,7 +491,6 @@ void Game::drawActiveMino()
 	for (int i = 0; i < 4; i++)
 	{
 		cell.setPosition(m_config.cellSize * positions[i].x * 1.0f, m_config.topBarHeight + m_config.cellSize * positions[i].y * 1.0f);
-		m_window.draw(cell);
+		m_window->draw(cell);
 	}
 }
-

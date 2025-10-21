@@ -1,5 +1,6 @@
 #pragma once
 #include "playfield.hpp"
+#include "menu.hpp"
 #include <random>
 
 
@@ -8,23 +9,23 @@ enum Randomizer { FullRandom = 0, ShuffleBag };
 
 struct Config
 {
-	int							cols = 12;
-	int							rows = 21;
-	int							cellSize = 40;
-	int							topBarHeight = 100;
-	float						gameSpeed = 0.8f;
-	Randomizer					randomizer = ShuffleBag;
+	int									cols = 12;
+	int									rows = 21;
+	int									cellSize = 40;
+	int									topBarHeight = 100;
+	float								gameSpeed = 0.8f;
+	Randomizer							randomizer = ShuffleBag;
 
 	std::array<sf::Color, 10>	color =
 	{
 		sf::Color(37, 36, 86),		// empty cell
-		sf::Color(0, 255, 255),		// I
-		sf::Color(0, 0, 255),		// J
-		sf::Color(255, 127, 0),		// L
-		sf::Color(255, 255, 0),		// O
-		sf::Color(0, 255, 0),		// S
-		sf::Color(128, 0, 128),		// T
-		sf::Color(255, 0, 0),		// Z
+		sf::Color(0, 255, 255),		// I shape
+		sf::Color(0, 0, 255),		// J shape
+		sf::Color(255, 127, 0),		// L shape
+		sf::Color(255, 255, 0),		// O shape
+		sf::Color(0, 255, 0),		// S shape
+		sf::Color(128, 0, 128),		// T shape
+		sf::Color(255, 0, 0),		// Z shape
 		sf::Color(32, 32, 32),		// border
 		sf::Color(0, 0, 0)			// spacing
 	};
@@ -43,22 +44,23 @@ class Game
 {
 private:
 
-	Config						m_config;
-	sf::RenderWindow			m_window;
-	sf::Font					m_font;
-	bool						m_running = false;
-	GameState					m_gameState = Init;
-	std::unique_ptr<Playfield>	m_playfield;
-	float						m_dT = 0.0f;
-	float						m_gameSpeed = 0.0f;
-	bool						m_moveMinoDown = false;
-	sf::Keyboard::Key			m_lastPressedKey = sf::Keyboard::Unknown;
-	bool						m_softDrop = false;
-	int							m_softDropRows = 0;
-	bool						m_hardDrop = false;
-	int							m_hardDropRows = 0;
-	std::vector<int>			m_shuffleBag;
-	Score						m_score;
+	Config								m_config;
+	std::shared_ptr<sf::RenderWindow>	m_window;
+	sf::Font							m_font;
+	bool								m_running = false;
+	GameState							m_gameState = Init;
+	std::unique_ptr<Menu>				m_menu;
+	std::unique_ptr<Playfield>			m_playfield;
+	float								m_gameSpeed = 0.0f;
+	float								m_dT = 0.0f;
+	bool								m_moveMinoDown = false;
+	sf::Keyboard::Key					m_lastPressedKey = sf::Keyboard::Unknown;
+	bool								m_softDrop = false;
+	int									m_softDropRows = 0;
+	bool								m_hardDrop = false;
+	int									m_hardDropRows = 0;
+	std::vector<int>					m_shuffleBag;
+	Score								m_score;
 
 
 public:
@@ -68,8 +70,10 @@ public:
 	void run();
 	void initWindow();
 	void initGame();
-	int getRandomShapeType();
+	void resetGame();
+	int randomShapeType();
 	void updateScore(int rows);
+	void togglePause();
 
 	void movement();
 	void collision();

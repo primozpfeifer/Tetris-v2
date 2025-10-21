@@ -133,7 +133,9 @@
   <ItemGroup>
     <ClCompile Include="game.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="menu.cpp" />
     <ClCompile Include="playfield.cpp" />
+    <ClInclude Include="menu.hpp" />
     <ClInclude Include="playfield.hpp" />
     <ClCompile Include="tetromino.cpp" />
   </ItemGroup>
