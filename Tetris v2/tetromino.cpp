@@ -160,7 +160,7 @@ int Tetromino::getShapeType()
 	return m_shapeType;
 }
 
-std::array<sf::Vector2i, 4> Tetromino::getPositions()
+std::array<sf::Vector2i, 4>Tetromino::getPositions()
 {
 	return
 	{
@@ -174,6 +174,11 @@ std::array<sf::Vector2i, 4> Tetromino::getPositions()
 sf::Vector2i Tetromino::getPosition()
 {
 	return m_position;
+}
+
+void Tetromino::setPosition(sf::Vector2i position)
+{
+	m_position = position;
 }
 
 void Tetromino::move(sf::Vector2i velocity)

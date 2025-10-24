@@ -15,19 +15,21 @@ struct Config
 	int									topBarHeight = 100;
 	float								gameSpeed = 0.8f;
 	Randomizer							randomizer = ShuffleBag;
+	bool								showMinoShadow = false;
 
-	std::array<sf::Color, 10>	color =
+	std::array<sf::Color, 11>	color =
 	{
-		sf::Color(37, 36, 86),		// empty cell
-		sf::Color(0, 255, 255),		// I shape
-		sf::Color(0, 0, 255),		// J shape
-		sf::Color(255, 127, 0),		// L shape
-		sf::Color(255, 255, 0),		// O shape
-		sf::Color(0, 255, 0),		// S shape
-		sf::Color(128, 0, 128),		// T shape
-		sf::Color(255, 0, 0),		// Z shape
-		sf::Color(32, 32, 32),		// border
-		sf::Color(0, 0, 0)			// spacing
+		sf::Color(37, 36, 86),			// empty cell
+		sf::Color(0, 255, 255),			// I shape
+		sf::Color(0, 0, 255),			// J shape
+		sf::Color(255, 127, 0),			// L shape
+		sf::Color(255, 255, 0),			// O shape
+		sf::Color(0, 255, 0),			// S shape
+		sf::Color(128, 0, 128),			// T shape
+		sf::Color(255, 0, 0),			// Z shape
+		sf::Color(32, 32, 32),			// border
+		sf::Color(0, 0, 0),				// spacing
+		sf::Color(255, 255, 255, 16)	// mino shadow
 	};
 };
 
@@ -75,8 +77,13 @@ public:
 	void updateScore(int rows);
 	void togglePause();
 
+	void spawnMino();
+	void moveMino(sf::Vector2i velocity);
+	void rotateMino(int rotation);
+
 	void movement();
 	void collision();
+	void fixMinoShadowVerticalPosition();
 	void inputEvents();
 	
 	void render();
@@ -84,4 +91,5 @@ public:
 	void drawTopBar();
 	void drawPlayField();
 	void drawActiveMino();
+	void drawMino(const std::shared_ptr<Tetromino>& tetromino, sf::Color color);
 };

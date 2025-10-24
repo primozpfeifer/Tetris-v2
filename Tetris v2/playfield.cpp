@@ -2,13 +2,11 @@
 #include "playfield.hpp"
 
 
-Playfield::Playfield(int cols, int rows) : m_cols(cols), m_rows(rows) {}
-
-
-void Playfield::init()
+Playfield::Playfield(int cols, int rows) : m_cols(cols), m_rows(rows)
 {
 	m_playfieldGrid.resize(m_cols * m_rows, 0);
 }
+
 
 void Playfield::reset()
 {
@@ -45,21 +43,26 @@ int Playfield::getCellType(sf::Vector2i position)
 	}
 }
 
-void Playfield::spawnMino(int shapeType)
+void Playfield::spawnMino(int shapeType, sf::Vector2i position, bool shadow)
 {
-	sf::Vector2i position;
-	position.x = (m_cols - 4) / 2;
-	position.y = -2;
-
-	if (shapeType == 4) position.x += 1;
-
 	m_activeMino.reset();
 	m_activeMino = std::make_shared<Tetromino>(shapeType, position);
+
+	if (shadow)
+	{
+		m_minoShadow.reset();
+		m_minoShadow = std::make_shared<Tetromino>(shapeType, position);
+	}
 }
 
 std::shared_ptr<Tetromino>& Playfield::activeMino()
 {
 	return m_activeMino;
+}
+
+std::shared_ptr<Tetromino>& Playfield::minoShadow()
+{
+	return m_minoShadow;
 }
 
 int Playfield::clearFullRows()

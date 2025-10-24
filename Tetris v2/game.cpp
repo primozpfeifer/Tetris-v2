@@ -83,7 +83,6 @@ void Game::initGame()
 	m_menu->addButton(sf::Vector2f(0.9f, 0.15f), sf::Vector2f(1.0f, 0.2f), m_font, "QUIT");
 
 	m_playfield = std::make_unique<Playfield>(m_config.cols, m_config.rows);
-	m_playfield->init();
 }
 
 void Game::resetGame()
@@ -100,7 +99,7 @@ void Game::resetGame()
 	m_gameSpeed = m_config.gameSpeed;
 	m_dT = 0.0f;
 	m_playfield->reset();
-	m_playfield->spawnMino(randomShapeType());
+	spawnMino();
 }
 
 int Game::randomShapeType()
@@ -189,9 +188,51 @@ void Game::togglePause()
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
+void Game::spawnMino()
+{
+	int shapeType = randomShapeType();
+	sf::Vector2i position;
+	position.x = (m_config.cols - 4) / 2;
+	position.y = -2;
+
+	if (shapeType == 4) position.x += 1;
+
+	m_playfield->spawnMino(shapeType, position, m_config.showMinoShadow);
+	
+	if (m_config.showMinoShadow) {
+		fixMinoShadowVerticalPosition();
+	}
+}
+
+void Game::moveMino(sf::Vector2i velocity)
+{
+	m_playfield->activeMino()->move(velocity);
+
+	if (m_config.showMinoShadow)
+	{
+		m_playfield->minoShadow()->move(velocity);
+		fixMinoShadowVerticalPosition();
+	}
+}
+void Game::rotateMino(int rotation)
+{
+	m_playfield->activeMino()->rotate(rotation);
+	
+	if (m_config.showMinoShadow)
+	{
+		m_playfield->minoShadow()->rotate(rotation);
+		fixMinoShadowVerticalPosition();
+	}
+}
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
 void Game::movement()
 {
-	// menu movement
+	// MAIN MENU
 	if (m_gameState == Pause)
 	{
 		switch (m_lastPressedKey)
@@ -230,12 +271,12 @@ void Game::movement()
 		return;
 
 
-	// game movement
+	// GAME
 	switch (m_lastPressedKey)
 	{
 		// rotation
 	case sf::Keyboard::Up:
-		m_playfield->activeMino()->rotate(1);
+		rotateMino(1);
 		break;
 
 		// soft drop
@@ -245,11 +286,11 @@ void Game::movement()
 
 		// horizontal movement
 	case sf::Keyboard::Left:
-		m_playfield->activeMino()->move(sf::Vector2i(-1, 0));
+		moveMino(sf::Vector2i(-1, 0));
 		break;
 
 	case sf::Keyboard::Right:
-		m_playfield->activeMino()->move(sf::Vector2i(1, 0));
+		moveMino(sf::Vector2i(1, 0));
 		break;
 
 	case sf::Keyboard::Space:
@@ -260,7 +301,7 @@ void Game::movement()
 	// falling
 	if (m_moveMinoDown)
 	{
-		m_playfield->activeMino()->move(sf::Vector2i(0, 1));
+		moveMino(sf::Vector2i(0, 1));
 		std::cout << "Move mino down!" << std::endl;
 
 		if (m_hardDrop)
@@ -290,7 +331,7 @@ void Game::collision()
 		{
 			if (m_playfield->getCellType(positions[i]) != 0)
 			{
-				m_playfield->activeMino()->rotate(-1);
+				rotateMino(-1);
 				std::cout << "CANNOT ROTATE!" << std::endl;
 				break;
 			}
@@ -304,7 +345,7 @@ void Game::collision()
 		{
 			if (m_playfield->getCellType(positions[i]) != 0)
 			{
-				m_playfield->activeMino()->move(sf::Vector2i(1, 0));
+				moveMino(sf::Vector2i(1, 0));
 				std::cout << "CANNOT MOVE LEFT!" << std::endl;
 				break;
 			}
@@ -317,7 +358,7 @@ void Game::collision()
 		{
 			if (m_playfield->getCellType(positions[i]) != 0)
 			{
-				m_playfield->activeMino()->move(sf::Vector2i(-1, 0));
+				moveMino(sf::Vector2i(-1, 0));
 				std::cout << "CANNOT MOVE RIGHT!" << std::endl;
 				break;
 			}
@@ -358,8 +399,33 @@ void Game::collision()
 				}
 
 				// spawn new mino
-				m_playfield->spawnMino(randomShapeType());
+				spawnMino();
 				break;
+			}
+		}
+	}
+}
+
+void Game::fixMinoShadowVerticalPosition()
+{
+	if (!m_config.showMinoShadow)
+		return;
+
+
+	m_playfield->minoShadow()->setPosition(m_playfield->activeMino()->getPosition());
+
+	for (int y = m_playfield->minoShadow()->getPosition().y; y < m_config.rows - 2; y++)
+	{
+		m_playfield->minoShadow()->move(sf::Vector2i(0, 1));
+		const std::array<sf::Vector2i, 4>& positions = m_playfield->minoShadow()->getPositions();
+		
+		for (int i = 0; i < 4; i++)
+		{
+			if (m_playfield->getCellType(positions[i]) != 0)
+			{
+				m_playfield->minoShadow()->move(sf::Vector2i(0, -1));
+				std::cout << "SHADOW HIT SOMETHING" << std::endl;
+				return;
 			}
 		}
 	}
@@ -402,13 +468,16 @@ void Game::inputEvents()
 void Game::render()
 {
 	m_window->clear();
+	
 	drawTopBar();
 	drawPlayField();
 	drawActiveMino();
+
 	if (m_gameState == Pause)
 	{
 		m_menu->draw(m_window);
 	}
+
 	m_window->display();
 }
 
@@ -479,14 +548,24 @@ void Game::drawPlayField()
 
 void Game::drawActiveMino()
 {
+	drawMino(m_playfield->activeMino(), getColor(m_playfield->activeMino()->getShapeType()));
+	
+	if (m_config.showMinoShadow)
+	{
+		drawMino(m_playfield->minoShadow(), getColor(10));
+	}
+}
+
+void Game::drawMino(const std::shared_ptr<Tetromino>& tetromino, sf::Color color)
+{
 	sf::RectangleShape cell;
 	cell.setSize(sf::Vector2f(m_config.cellSize * 1.0f, m_config.cellSize * 1.0f));
 	cell.setOutlineThickness(-2);
 	cell.setOutlineColor(getColor(9));
 
-	cell.setFillColor(getColor(m_playfield->activeMino()->getShapeType()));
+	cell.setFillColor(color);
 
-	const std::array<sf::Vector2i, 4>& positions = m_playfield->activeMino()->getPositions();
+	const std::array<sf::Vector2i, 4>& positions = tetromino->getPositions();
 
 	for (int i = 0; i < 4; i++)
 	{
