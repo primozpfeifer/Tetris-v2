@@ -4,17 +4,12 @@
 
 Tetromino::Tetromino(int shapeType, sf::Vector2i position)
 {
-	initMino(shapeType, position);
-}
-
-
-void Tetromino::initMino(int shapeType, sf::Vector2i position)
-{
 	m_shapeType = shapeType;
 	m_shapeState = 0;
 	m_position = position;
 	initShape(shapeType);
 }
+
 
 void Tetromino::initShape(int shapeType)
 {
@@ -160,7 +155,7 @@ int Tetromino::getShapeType()
 	return m_shapeType;
 }
 
-std::array<sf::Vector2i, 4>Tetromino::getPositions()
+std::array<sf::Vector2i, 4>Tetromino::getShapePositions()
 {
 	return
 	{

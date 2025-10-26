@@ -16,10 +16,10 @@ private:
 public:
 
 	Tetromino(int shapeType, sf::Vector2i position);
-	void initMino(int shapeType, sf::Vector2i position);
+	
 	void initShape(int shapeType);
 	int getShapeType();
-	std::array<sf::Vector2i, 4>getPositions();
+	std::array<sf::Vector2i, 4>getShapePositions();
 	sf::Vector2i getPosition();
 	void setPosition(sf::Vector2i position);
 	void move(sf::Vector2i velocity);

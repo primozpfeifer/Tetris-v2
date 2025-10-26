@@ -89,9 +89,7 @@ void Game::resetGame()
 {
 	m_moveMinoDown = false;
 	m_softDrop = false;
-	m_softDropRows = 0;
 	m_hardDrop = false;
-	m_hardDropRows = 0;
 	m_shuffleBag.clear();
 	m_score = {};
 	
@@ -141,8 +139,8 @@ int Game::randomShapeType()
 
 void Game::updateScore(int clearedRows)
 {
-	m_score.points += m_softDropRows - 1;
-	m_score.points += m_hardDropRows * 2 - 1;
+	m_score.points += m_score.softDropRows - 1;
+	m_score.points += m_score.hardDropRows * 2 - 1;
 	
 	if (clearedRows > 0)
 	{
@@ -200,7 +198,7 @@ void Game::spawnMino()
 	m_playfield->spawnMino(shapeType, position, m_config.showMinoShadow);
 	
 	if (m_config.showMinoShadow) {
-		fixMinoShadowVerticalPosition();
+		updateShadowPosition();
 	}
 }
 
@@ -211,9 +209,10 @@ void Game::moveMino(sf::Vector2i velocity)
 	if (m_config.showMinoShadow)
 	{
 		m_playfield->minoShadow()->move(velocity);
-		fixMinoShadowVerticalPosition();
+		updateShadowPosition();
 	}
 }
+
 void Game::rotateMino(int rotation)
 {
 	m_playfield->activeMino()->rotate(rotation);
@@ -221,10 +220,34 @@ void Game::rotateMino(int rotation)
 	if (m_config.showMinoShadow)
 	{
 		m_playfield->minoShadow()->rotate(rotation);
-		fixMinoShadowVerticalPosition();
+		updateShadowPosition();
 	}
 }
 
+void Game::updateShadowPosition()
+{
+	if (!m_config.showMinoShadow)
+		return;
+
+
+	m_playfield->minoShadow()->setPosition(m_playfield->activeMino()->getPosition());
+
+	for (int y = m_playfield->minoShadow()->getPosition().y; y < m_config.rows - 2; y++)
+	{
+		m_playfield->minoShadow()->move(sf::Vector2i(0, 1));
+		const std::array<sf::Vector2i, 4>& positions = m_playfield->minoShadow()->getShapePositions();
+
+		for (int i = 0; i < 4; i++)
+		{
+			if (m_playfield->getCellType(positions[i]) != 0)
+			{
+				m_playfield->minoShadow()->move(sf::Vector2i(0, -1));
+				std::cout << "SHADOW HIT SOMETHING" << std::endl;
+				return;
+			}
+		}
+	}
+}
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -306,11 +329,11 @@ void Game::movement()
 
 		if (m_hardDrop)
 		{
-			m_hardDropRows++;
+			m_score.hardDropRows++;
 		}
 		else if (m_softDrop)
 		{
-			m_softDropRows++;
+			m_score.softDropRows++;
 		}
 	}
 }
@@ -322,7 +345,7 @@ void Game::collision()
 		return;
 
 
-	const std::array<sf::Vector2i, 4>& positions = m_playfield->activeMino()->getPositions();
+	const std::array<sf::Vector2i, 4>& positions = m_playfield->activeMino()->getShapePositions();
 
 	// rotation collision
 	if (m_lastPressedKey == sf::Keyboard::Up)
@@ -383,9 +406,9 @@ void Game::collision()
 				// full rows and scoring
 				updateScore(m_playfield->clearFullRows());
 				m_softDrop = false;
-				m_softDropRows = 0;
+				m_score.softDropRows = 0;
 				m_hardDrop = false;
-				m_hardDropRows = 0;
+				m_score.hardDropRows = 0;
 
 				// check if minos stacked to the top
 				for (int j = 0; j < 4; j++)
@@ -401,31 +424,6 @@ void Game::collision()
 				// spawn new mino
 				spawnMino();
 				break;
-			}
-		}
-	}
-}
-
-void Game::fixMinoShadowVerticalPosition()
-{
-	if (!m_config.showMinoShadow)
-		return;
-
-
-	m_playfield->minoShadow()->setPosition(m_playfield->activeMino()->getPosition());
-
-	for (int y = m_playfield->minoShadow()->getPosition().y; y < m_config.rows - 2; y++)
-	{
-		m_playfield->minoShadow()->move(sf::Vector2i(0, 1));
-		const std::array<sf::Vector2i, 4>& positions = m_playfield->minoShadow()->getPositions();
-		
-		for (int i = 0; i < 4; i++)
-		{
-			if (m_playfield->getCellType(positions[i]) != 0)
-			{
-				m_playfield->minoShadow()->move(sf::Vector2i(0, -1));
-				std::cout << "SHADOW HIT SOMETHING" << std::endl;
-				return;
 			}
 		}
 	}
@@ -565,7 +563,7 @@ void Game::drawMino(const std::shared_ptr<Tetromino>& tetromino, sf::Color color
 
 	cell.setFillColor(color);
 
-	const std::array<sf::Vector2i, 4>& positions = tetromino->getPositions();
+	const std::array<sf::Vector2i, 4>& positions = tetromino->getShapePositions();
 
 	for (int i = 0; i < 4; i++)
 	{

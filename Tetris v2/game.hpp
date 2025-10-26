@@ -15,9 +15,9 @@ struct Config
 	int									topBarHeight = 100;
 	float								gameSpeed = 0.8f;
 	Randomizer							randomizer = ShuffleBag;
-	bool								showMinoShadow = false;
+	bool								showMinoShadow = true;
 
-	std::array<sf::Color, 11>	color =
+	std::array<sf::Color, 11>			color =
 	{
 		sf::Color(37, 36, 86),			// empty cell
 		sf::Color(0, 255, 255),			// I shape
@@ -33,12 +33,14 @@ struct Config
 	};
 };
 
-struct Score
+struct									Score
 {
 	int points = 0;
 	int rows = 0;
 	int level = 1;
 	int playTime = 0;
+	int softDropRows = 0;
+	int hardDropRows = 0;
 };
 
 
@@ -58,9 +60,7 @@ private:
 	bool								m_moveMinoDown = false;
 	sf::Keyboard::Key					m_lastPressedKey = sf::Keyboard::Unknown;
 	bool								m_softDrop = false;
-	int									m_softDropRows = 0;
 	bool								m_hardDrop = false;
-	int									m_hardDropRows = 0;
 	std::vector<int>					m_shuffleBag;
 	Score								m_score;
 
@@ -70,6 +70,10 @@ public:
 	Game();
 
 	void run();
+
+
+private:
+
 	void initWindow();
 	void initGame();
 	void resetGame();
@@ -80,10 +84,10 @@ public:
 	void spawnMino();
 	void moveMino(sf::Vector2i velocity);
 	void rotateMino(int rotation);
+	void updateShadowPosition();
 
 	void movement();
 	void collision();
-	void fixMinoShadowVerticalPosition();
 	void inputEvents();
 	
 	void render();
